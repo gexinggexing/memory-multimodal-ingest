@@ -1,0 +1,102 @@
+{
+  "id": "memory-multimodal-ingest",
+  "name": "Memory (Multimodal Ingest)",
+  "description": "Store and search multimodal memories with Gemini Embedding 2 and LanceDB",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "embedding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "apiKey": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "apiBase": {
+            "type": "string"
+          },
+          "dimensions": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "apiKey"
+        ]
+      },
+      "dbPath": {
+        "type": "string"
+      },
+      "blobPath": {
+        "type": "string"
+      },
+      "maxInlineBytes": {
+        "type": "integer",
+        "minimum": 1024,
+        "default": 8388608
+      },
+      "modalities": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "image": {
+            "type": "boolean",
+            "default": true
+          },
+          "video": {
+            "type": "boolean",
+            "default": true
+          },
+          "audio": {
+            "type": "boolean",
+            "default": true
+          },
+          "pdf": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    "required": [
+      "embedding"
+    ]
+  },
+  "uiHints": {
+    "embedding.apiKey": {
+      "label": "Gemini API Key",
+      "sensitive": true,
+      "placeholder": "${GEMINI_API_KEY}"
+    },
+    "embedding.model": {
+      "label": "Embedding Model",
+      "placeholder": "gemini-embedding-2-preview",
+      "help": "Gemini multimodal embedding model name"
+    },
+    "embedding.apiBase": {
+      "label": "API Base",
+      "placeholder": "https://generativelanguage.googleapis.com/v1beta",
+      "advanced": true
+    },
+    "dbPath": {
+      "label": "Database Path",
+      "placeholder": "~/.openclaw/memory/lancedb-multimodal",
+      "advanced": true
+    },
+    "blobPath": {
+      "label": "Blob Path",
+      "placeholder": "~/.openclaw/memory/blobs",
+      "advanced": true
+    },
+    "maxInlineBytes": {
+      "label": "Max Inline Bytes",
+      "help": "Reject files larger than this size for the current inline_data MVP",
+      "advanced": true
+    }
+  }
+}

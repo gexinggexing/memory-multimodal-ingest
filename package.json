@@ -1,0 +1,20 @@
+{
+  "name": "memory-multimodal-ingest",
+  "version": "0.1.0",
+  "description": "OpenClaw multimodal memory ingest plugin backed by LanceDB and Gemini Embedding 2",
+  "type": "module",
+  "main": "index.ts",
+  "dependencies": {
+    "@lancedb/lancedb": "^0.26.2",
+    "@sinclair/typebox": "0.34.48",
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
