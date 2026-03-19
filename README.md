@@ -29,6 +29,14 @@ What is not implemented yet:
 - Files API path for large media
 - recall broker integration into `memory-lancedb-pro`
 
+Upstream-facing boundaries:
+
+- explicit plugin config is required under `plugins.entries.memory-multimodal-ingest.config`
+- current code still keeps a narrow compatibility fallback for OpenClaw builds where `api.config` is missing in plugin discovery / CLI contexts
+- that fallback reads only the plugin's own `memory-multimodal-ingest` entry and should be removable once the SDK consistently passes config
+- `metadata` is treated as JSON and validated on ingest
+- large-media handling is intentionally out of scope for this MVP
+
 Validated locally:
 
 - `openclaw memory-media ingest /path/to/file`
@@ -74,6 +82,7 @@ Example commands:
 ```bash
 openclaw memory-media ingest /path/to/example.png --preview-text "red square test"
 openclaw memory-media ingest /path/to/example.pdf --preview-text "pdf doc test"
+openclaw memory-media ingest /path/to/example.mp4 --metadata '{"project":"demo","kind":"clip"}'
 openclaw memory-media stats
 openclaw memory-media search "red square test" --limit 3
 ```

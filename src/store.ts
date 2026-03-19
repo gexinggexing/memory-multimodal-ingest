@@ -14,6 +14,7 @@ export interface MediaMemoryEntry {
   metadata: string;
   contentHash: string;
   vector: number[];
+  [key: string]: unknown;
 }
 
 export interface MediaSearchResult {
@@ -77,9 +78,9 @@ export class MediaStore {
         timestamp: 0,
         metadata: "{}",
         contentHash: "",
-        vector: Array.from({ length: this.config.vectorDim }).fill(0)
+        vector: Array.from({ length: this.config.vectorDim }, () => 0)
       };
-      table = await db.createTable(TABLE_NAME, [schemaRow]);
+      table = await db.createTable(TABLE_NAME, [schemaRow as Record<string, unknown>]);
       await table.delete('id = "__schema__"');
     }
 
@@ -95,11 +96,11 @@ export class MediaStore {
   async store(entry: Omit<MediaMemoryEntry, "id" | "timestamp">): Promise<MediaMemoryEntry> {
     await this.ensureInitialized();
     const full: MediaMemoryEntry = {
-      ...entry,
+      ...(entry as MediaMemoryEntry),
       id: randomUUID(),
       timestamp: Date.now()
     };
-    await this.table!.add([full]);
+    await this.table!.add([full as Record<string, unknown>]);
     return full;
   }
 

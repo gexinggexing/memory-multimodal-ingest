@@ -29,6 +29,14 @@
 - 大文件走 Files API
 - 与 `memory-lancedb-pro` 的 recall broker 融合
 
+为了更适合 upstream 讨论，这个仓库现在明确保持以下边界：
+
+- 必须通过 `plugins.entries.memory-multimodal-ingest.config` 显式传配置
+- 当前代码仍保留了一个很窄的兼容性 fallback，用来处理 OpenClaw 某些 discovery / CLI 场景下 `api.config` 缺失的问题
+- 这个 fallback 只读取插件自己的 `memory-multimodal-ingest` 条目，等 SDK 稳定传 config 后可以删掉
+- `metadata` 会按 JSON 校验，不再把任意字符串静默存进去
+- 大文件和更重的多模态流水线仍然留在下一阶段
+
 本地已经验证通过的命令：
 
 ```bash
@@ -76,6 +84,7 @@ openclaw memory-media search "query"
 ```bash
 openclaw memory-media ingest /path/to/example.png --preview-text "red square test"
 openclaw memory-media ingest /path/to/example.pdf --preview-text "pdf doc test"
+openclaw memory-media ingest /path/to/example.mp4 --metadata '{"project":"demo","kind":"clip"}'
 openclaw memory-media stats
 openclaw memory-media search "red square test" --limit 3
 ```

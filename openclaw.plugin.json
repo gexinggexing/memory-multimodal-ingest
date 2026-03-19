@@ -20,6 +20,9 @@
           "apiBase": {
             "type": "string"
           },
+          "baseURL": {
+            "type": "string"
+          },
           "dimensions": {
             "type": "integer",
             "minimum": 1
@@ -81,6 +84,12 @@
     "embedding.apiBase": {
       "label": "API Base",
       "placeholder": "https://generativelanguage.googleapis.com/v1beta",
+      "advanced": true
+    },
+    "embedding.baseURL": {
+      "label": "Base URL (Alias)",
+      "placeholder": "https://generativelanguage.googleapis.com/v1beta",
+      "help": "Deprecated alias for embedding.apiBase",
       "advanced": true
     },
     "dbPath": {

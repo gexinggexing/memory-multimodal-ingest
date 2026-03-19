@@ -22,6 +22,11 @@ interface PluginConfig {
   modalities?: Partial<Record<MediaModality, boolean>>;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
 function resolveEnvVars(value: string): string {
   return value.replace(/\$\{([^}]+)\}/g, (_, key) => {
     const envValue = process.env[key];
@@ -30,49 +35,99 @@ function resolveEnvVars(value: string): string {
   });
 }
 
-function loadConfigFromOpenClawFile(): Record<string, unknown> | null {
+function parseString(
+  source: Record<string, unknown>,
+  key: string,
+  fallback?: string,
+): string | undefined {
+  const value = source[key];
+  if (typeof value === "string" && value.trim()) {
+    return resolveEnvVars(value.trim());
+  }
+  return fallback;
+}
+
+function parsePositiveInteger(
+  source: Record<string, unknown>,
+  key: string,
+  fallback: number,
+): number {
+  const value = source[key];
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+  return fallback;
+}
+
+function parseMetadata(metadata: string | undefined): string {
+  const raw = metadata?.trim() || "{}";
+  try {
+    return JSON.stringify(JSON.parse(raw));
+  } catch (error) {
+    throw new Error(`metadata must be valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function derivePreviewText(source: string): string {
+  if (/^https?:\/\//i.test(source)) {
+    try {
+      const url = new URL(source);
+      const filename = basename(url.pathname, extname(url.pathname));
+      return filename || url.hostname;
+    } catch {
+      return source;
+    }
+  }
+  return basename(source, extname(source));
+}
+
+function loadConfigCompatibilityFallback(): Record<string, unknown> | null {
   try {
     const cfgPath = process.env.OPENCLAW_CONFIG_PATH || `${process.env.HOME}/.openclaw/openclaw.json`;
     const raw = JSON.parse(readFileSync(cfgPath, "utf8")) as Record<string, unknown>;
-    const plugins = raw.plugins as Record<string, unknown> | undefined;
-    const entries = plugins?.entries as Record<string, unknown> | undefined;
-    const entry = entries?.["memory-multimodal-ingest"] as Record<string, unknown> | undefined;
-    const config = entry?.config as Record<string, unknown> | undefined;
-    return config || null;
+    const plugins = asRecord(raw.plugins);
+    const entries = asRecord(plugins?.entries);
+    const entry = asRecord(entries?.["memory-multimodal-ingest"]);
+    return asRecord(entry?.config);
   } catch {
     return null;
   }
 }
 
 function parsePluginConfig(value: unknown): PluginConfig {
-  let cfg: Record<string, unknown> | null = null;
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    const raw = value as Record<string, unknown>;
-    cfg = raw.config && typeof raw.config === "object" && !Array.isArray(raw.config)
-      ? raw.config as Record<string, unknown>
-      : raw;
-  }
-  if (!cfg || !cfg.embedding) {
-    cfg = loadConfigFromOpenClawFile();
-  }
+  const raw = asRecord(value);
+  const inlineCfg = asRecord(raw?.config) || raw;
+  const cfg = asRecord(inlineCfg?.embedding) ? inlineCfg : loadConfigCompatibilityFallback();
   if (!cfg) {
-    throw new Error("memory-multimodal-ingest config required");
+    throw new Error("memory-multimodal-ingest config is required");
   }
-  const embedding = cfg.embedding as Record<string, unknown> | undefined;
-  if (!embedding || typeof embedding.apiKey !== "string") {
+
+  const embedding = asRecord(cfg.embedding);
+  if (!embedding) {
+    throw new Error("embedding config is required");
+  }
+
+  const apiKey = parseString(embedding, "apiKey");
+  if (!apiKey) {
     throw new Error("embedding.apiKey is required");
   }
+
+  const model = parseString(embedding, "model", "gemini-embedding-2-preview");
+  if (!model) {
+    throw new Error("embedding.model is required");
+  }
+
   return {
     embedding: {
-      apiKey: resolveEnvVars(String(embedding.apiKey)),
-      model: typeof embedding.model === "string" ? embedding.model : "gemini-embedding-2-preview",
-      apiBase: typeof embedding.apiBase === "string" ? resolveEnvVars(embedding.apiBase) : "https://generativelanguage.googleapis.com/v1beta",
-      dimensions: typeof embedding.dimensions === "number" ? embedding.dimensions : 3072
+      apiKey,
+      model,
+      apiBase: parseString(embedding, "apiBase", parseString(embedding, "baseURL", "https://generativelanguage.googleapis.com/v1beta")),
+      dimensions: parsePositiveInteger(embedding, "dimensions", 3072),
     },
-    dbPath: typeof cfg.dbPath === "string" ? cfg.dbPath : undefined,
-    blobPath: typeof cfg.blobPath === "string" ? cfg.blobPath : undefined,
-    maxInlineBytes: typeof cfg.maxInlineBytes === "number" ? cfg.maxInlineBytes : 8 * 1024 * 1024,
-    modalities: typeof cfg.modalities === "object" && cfg.modalities ? cfg.modalities as Partial<Record<MediaModality, boolean>> : undefined
+    dbPath: parseString(cfg, "dbPath"),
+    blobPath: parseString(cfg, "blobPath"),
+    maxInlineBytes: parsePositiveInteger(cfg, "maxInlineBytes", 8 * 1024 * 1024),
+    modalities: asRecord(cfg.modalities) as Partial<Record<MediaModality, boolean>> | undefined,
   };
 }
 
@@ -139,7 +194,7 @@ const plugin = {
         throw new Error(`Modality ${modality} is disabled by config`);
       }
 
-      const previewText = options?.previewText || basename(source, extname(source));
+      const previewText = options?.previewText?.trim() || derivePreviewText(loaded.sourceUri);
       const vector = await embedder.embedInlineDataWithText(mimeType, loaded.bytes, previewText);
       const digest = createHash("sha256").update(loaded.bytes).digest("hex");
       const blobId = createHash("sha256").update(`${digest}:${Date.now()}`).digest("hex").slice(0, 16);
@@ -151,7 +206,7 @@ const plugin = {
         blobPath: savedBlobPath,
         previewText,
         scope: options?.scope || "global",
-        metadata: options?.metadata || "{}",
+        metadata: parseMetadata(options?.metadata),
         contentHash: digest,
         vector
       });
