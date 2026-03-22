@@ -4,6 +4,13 @@
 
 这是一个给 OpenClaw 用的多模态记忆摄取插件，底层使用 LanceDB 做向量存储，使用 Gemini Embedding 2 做多模态 embedding。
 
+当前状态：
+
+- 实验性原型
+- 独立于 `CortexReach/memory-lancedb-pro` 演进
+- 现阶段不应被视为官方 companion plugin
+- 上游讨论入口以 [CortexReach/memory-lancedb-pro#275](https://github.com/CortexReach/memory-lancedb-pro/discussions/275) 为准
+
 当前 MVP 已经支持：
 
 - 从本地路径或 HTTP(S) URL 摄取 `image / video / audio / PDF`
@@ -36,6 +43,7 @@
 - 这个 fallback 只读取插件自己的 `memory-multimodal-ingest` 条目，等 SDK 稳定传 config 后可以删掉
 - `metadata` 会按 JSON 校验，不再把任意字符串静默存进去
 - 大文件和更重的多模态流水线仍然留在下一阶段
+- 在 `#275` 形成共识之前，不应该把这条路线提前写进母项目主 README 或当成官方方案宣传
 
 本地已经验证通过的命令：
 
@@ -89,8 +97,8 @@ openclaw memory-media stats
 openclaw memory-media search "red square test" --limit 3
 ```
 
-推荐的推进顺序：
+当前推荐的推进顺序：
 
 1. 保持这个插件独立演进
-2. 把 `Embedding 2 + 文档 + CLI 修复` 作为小 PR 往母项目提
-3. 再单独讨论是否把这个插件并入母项目或放到同组织下
+2. 在上游 discussion `#275` 先把边界和集成面讨论清楚
+3. 等形成共识后，再决定是否做官方文档入口或进一步集成

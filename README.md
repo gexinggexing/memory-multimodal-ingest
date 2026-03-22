@@ -4,6 +4,13 @@
 
 OpenClaw plugin for multimodal memory ingest backed by LanceDB and Gemini Embedding 2.
 
+Status:
+
+- experimental prototype
+- maintained independently from `CortexReach/memory-lancedb-pro`
+- not an official upstream companion plugin at this stage
+- upstream discussion first: [CortexReach/memory-lancedb-pro#275](https://github.com/CortexReach/memory-lancedb-pro/discussions/275)
+
 Current MVP:
 
 - ingest image / video / audio / PDF from local paths or HTTP(S) URLs
@@ -36,6 +43,7 @@ Upstream-facing boundaries:
 - that fallback reads only the plugin's own `memory-multimodal-ingest` entry and should be removable once the SDK consistently passes config
 - `metadata` is treated as JSON and validated on ingest
 - large-media handling is intentionally out of scope for this MVP
+- upstream integration should wait for consensus in discussion `#275` before any attempt to merge this direction into core docs or code
 
 Validated locally:
 
